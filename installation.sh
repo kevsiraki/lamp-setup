@@ -41,4 +41,13 @@ sudo mkdir /var/www/$HOSTNAME #make a directory for your domain
 sudo chown -R $USER:$USER /var/www/$HOSTNAME #give ownership to currently logged in user
 sudo chmod -R 755 /var/www/$HOSTNAME #check that the above command worked
 
-sudo cat default_index.html > /var/www/$HOSTNAME/index.html
+cat default_index.html | sudo tee /var/www/$HOSTNAME/index.html
+
+./setup_default_conf.sh | sudo tee /etc/apache2/sites-available/$HOSTNAME.conf
+
+sudo a2ensite your_domain.conf #enables the new site file
+sudo a2dissite 000-default.conf #disable 000-default.conf default website file
+sudo apache2ctl configtest #test the config file for errors
+sudo systemctl restart apache2 #restart server to save changes
+
+cat default_info.php | sudo tee /var/www/$HOSTNAME/info.php
