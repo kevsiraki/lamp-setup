@@ -43,7 +43,7 @@ sudo chmod -R 755 /var/www/$HOSTNAME #check that the above command worked
 
 cat default_index.html | sudo tee /var/www/$HOSTNAME/index.html
 
-./setup_default_conf.sh | sudo tee /etc/apache2/sites-available/$HOSTNAME.conf
+./setup_default_conf.sh $HOSTNAME | sudo tee /etc/apache2/sites-available/$HOSTNAME.conf
 
 sudo a2ensite your_domain.conf #enables the new site file
 sudo a2dissite 000-default.conf #disable 000-default.conf default website file
