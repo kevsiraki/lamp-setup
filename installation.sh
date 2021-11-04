@@ -51,3 +51,16 @@ sudo apache2ctl configtest #test the config file for errors
 sudo systemctl restart apache2 #restart server to save changes
 
 cat default_info.php | sudo tee /var/www/$HOSTNAME/info.php
+
+# Install Goaccess for analytics
+sudo apt install goaccess
+
+# Install certbot via snap
+sudo snap refresh
+sudo snap install certbot
+
+# Install nix
+curl -L https://nixos.org/nix/install | sh
+
+# Install Snort via Nix
+nix-env -iA nixpkgs.snort
