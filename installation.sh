@@ -13,7 +13,7 @@ fi
 
 sudo apt -y update #update cache command
 sudo apt -y  full-upgrade  #update cache command
-
+sudo apt install goaccess #install goaccess for logging
 sudo apt -y install apache2  #command for installation of apache server
 
 sudo apt -y install ufw #install ufw
