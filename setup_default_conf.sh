@@ -1,5 +1,4 @@
 #!/usr/bin/env bash
-
 if [ $# -eq 0 ]
 then
     echo "Error: no arguments given"
@@ -8,7 +7,7 @@ then
 else
     HOSTNAME=$1
 fi
-
+#configuration file for the website
 printf "
 <VirtualHost *:80>
     ServerAdmin webmaster@localhost

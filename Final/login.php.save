@@ -1,0 +1,237 @@
+<?php
+// Initialize the session
+session_start();
+
+// Check if the user is already logged in, if yes then redirect him to welcome page
+if (isset($_SESSION["loggedin"]) && $_SESSION["loggedin"] === true) {
+    header("location: welcome.php");
+    exit();
+}
+
+// Include config file
+require_once "config.php";
+
+// Define variables and initialize with empty values
+$username = $password = "";
+$username_err = $password_err = $login_err = "";
+// Change the line below to your timezone!
+
+// Processing form data when form is submitted
+if ($_SERVER["REQUEST_METHOD"] == "POST") {
+    // Check if username is empty
+    if (empty(trim($_POST["username"]))  && isset($_POST["Submit"])) {
+        $username_err = "Please enter username.";
+    } else {
+        $username = trim($_POST["username"]);
+    }
+    // Check if password is empty
+    if (empty(trim($_POST["password"])) && isset($_POST["Submit"])) {
+        $password_err = "Please enter your password.";
+    } else {
+        $password = trim($_POST["password"]);
+    }
+
+    // Validate credentials
+    if (empty($username_err) && empty($password_err)&& isset($_POST["Submit"])) {
+        // Prepare a select statement
+        $sql = "SELECT id, username, password FROM users WHERE username = ?";
+        $check = mysqli_query(
+            $link,
+            "SELECT * FROM users WHERE username =  '$username'; "
+        );
+        $name = mysqli_fetch_assoc($check);
+        //print_r ($name);
+        if (empty($name["email_verified_at"])) {
+            $verified = 0;
+        } else {
+            $verified = 1;
+        }
+        if ($stmt = mysqli_prepare($link, $sql)) {
+            // Bind variables to the prepared statement as parameters
+            mysqli_stmt_bind_param($stmt, "s", $param_username);
+            // Set parameters
+            $param_username = $username;
+            // Attempt to execute the prepared statement
+            if (mysqli_stmt_execute($stmt)) {
+                // Store result
+                mysqli_stmt_store_result($stmt);
+                //check captcha
+                if (
+                    !(
+                        empty($_SESSION["captcha_code"]) ||
+                        strcasecmp(
+                            $_SESSION["captcha_code"],
+                            $_POST["captcha_code"]
+                        ) != 0
+                    )
+                ) {
+                    // Check if username exists, if yes then verify password
+                    if (mysqli_stmt_num_rows($stmt) == 1 ) {
+                        // Bind result variables
+                        mysqli_stmt_bind_result(
+                            $stmt,
+                            $id,
+                            $username,
+                            $hashed_password
+                        );
+                        if (mysqli_stmt_fetch($stmt)&& isset($_POST["Submit"])) {
+                            if (
+                                password_verify($password, $hashed_password) &&
+                                $verified == 1
+                            ) {
+                                // Password is correct and they are verified, so start a new session
+                                session_start();
+                                mysqli_query(
+                                    $link,
+                                    "UPDATE users SET count=count+1 WHERE username = '$username';"
+                                );
+                                date_default_timezone_set(
+                                    "America/Los_Angeles"
+                                );
+                                $date = date("Y-m-d H:i:s");
+                                mysqli_query(
+                                    $link,
+                                    "UPDATE users SET created_at='$date' WHERE username = '$username';"
+                                );
+                                // Store data in session variables
+                                $_SESSION["loggedin"] = true;
+                                $_SESSION["id"] = $id;
+                                $_SESSION["username"] = $username;
+                                // Redirect user
+                                header("location: welcome.php");
+                            } else {
+                                // Password is not valid, display a generic error message
+                                $login_err =
+                                    "Invalid credentials, or email not verified.";
+                            }
+                        }
+                    } else {
+                        // Username doesn't exist, display a generic error message
+                        $login_err =
+                            "Invalid credentials, or email not verified.";
+                    }
+                } else {
+                    $login_err = "Invalid captcha. Try Again. ";
+                }
+            } else {
+                echo "Oops! Something went wrong. Please try again later.";
+            }
+            // Close statement
+            mysqli_stmt_close($stmt);
+        }
+    }
+    // Close connection
+    mysqli_close($link);
+}
+?>
+
+
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <title>Login</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <style>
+	html {
+	height:100%;
+	}
+	 body {
+		 
+		  background-color : #0f7bff;
+		  background-image: linear-gradient(#0f7bff,#d6d6d6);
+        font-size: 14px; 
+		font-family: "Lucida Console", "Courier New", monospace;
+      }
+	.btn {
+margin-left: -110px;	
+}
+      .wrapper {
+        width: 360px;
+        padding: 20px;
+		background-image: linear-gradient( #0f7bff,#d6d6d6,#ff9efa);
+		position: fixed; /* or absolute */
+		left: 50%;
+		margin-left: -180px;
+		margin-top: 120px;
+		border-radius: 25px;
+  border: 2px solid #d6d6d6;
+  padding: 20px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="wrapper">
+      <h2>Login</h2>
+      <p>Please fill in your credentials to login.</p> <?php 
+        if(!empty($login_err)){
+            echo '
+					<div class="alert alert-danger">' . $login_err . '</div>';
+        }?> 
+		<form action="
+						<?php echo htmlspecialchars($_SERVER["PHP_SELF"]); ?>" method="post">
+        <div class="form-group">
+          <label>Username</label>
+          <input type="text" name="username" class="form-control 
+			<?php echo (!empty($username_err)) ? 'is-invalid' : ''; ?>" value="<?php echo $username; ?>">
+          <span class="invalid-feedback"> <?php echo $username_err; ?> </span>
+        </div>
+        <div class="form-group">
+          <label>Password</label>
+          <input type="password" name="password" class="form-control 
+									<?php echo (!empty($password_err)) ? 'is-invalid' : ''; ?>">
+          <span class="invalid-feedback"> <?php echo $password_err; ?> </span>
+        </div>
+        <div class="form-group">
+          <! input type="submit" class="btn btn-primary" value="Login" !>
+            <table width="400" border="0" align="left" cellpadding="5" cellspacing="1" class="table"> <?php if(isset($msg)){?><tr>
+                <td colspan="2" align="left" valign="top"> <?php echo $msg;?></td>
+              </tr> <?php } ?><tr>
+                <td align="left" valign="top"> Validation code:</td>
+                <td><img src="captcha.php?rand=
+			<?php echo rand();?>" id='captchaimg'><br><label for='message'>Enter the code above here :</label><br><input id="captcha_code" name="captcha_code" type="text"><br> Can't read the image? click <a href='javascript: refreshCaptcha();'>here</a> to refresh.</td>
+              </tr>
+              <tr>
+                <td>&nbsp;</td>
+                <td><input name="Submit" type="submit" onclick="return validate();" value="Login" class="btn btn-primary"></td>
+		<td><input name="verify" type="submit" onclick="return validate();" value="Sign-Up" class="btn btn-primary"></td>
+
+              </tr>
+            </table>
+            <p>
+			Don't have an account? 
+			<?php 
+			if (isset($_POST["verify"])&&
+                    !(
+                        empty($_SESSION["captcha_code"]) ||
+                        strcasecmp(
+                            $_SESSION["captcha_code"],
+                            $_POST["captcha_code"]
+                        ) != 0
+                    )
+                ){header("location: register.php");}
+else {
+echo "Re-Enter valid CAPTCHA to Sign-Up";
+}
+			?>
+			
+			
+			 <p>Enter valid CAPTCHA to 
+			Register.</p>
+			
+			</p>
+        </div>
+      </form>
+    </div>
+    <head>
+      <meta charset="utf-8">
+     
+      <script type='text/javascript'>
+        function refreshCaptcha() {
+          var img = document.images['captchaimg'];
+          img.src = img.src.substring(0, img.src.lastIndexOf("?")) + "?rand=" + Math.random() * 1000;
+        }
+      </script>
+    </head>
+  </body>
+</html>

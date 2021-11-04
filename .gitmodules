@@ -1,0 +1,3 @@
+[submodule "Final/vendor/sonata-project/google-authenticator"]
+	path = Final/vendor/sonata-project/google-authenticator
+	url = https://github.com/sonata-project/GoogleAuthenticator.git
