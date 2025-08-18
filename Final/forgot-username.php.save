@@ -1,0 +1,108 @@
+<?php
+// Include config file
+session_start();
+$_SESSION["email"] = trim($_GET["key"]);
+
+require_once "config.php";
+// Define variables and initialize with empty values
+$email = $ans = $us = "";
+$ans_err = "";
+
+    //the list of questions
+    $array = array(
+        "1" => "What is your mother's maiden name?",
+        "2" => "What is your favorite pet's name?",
+        "3" => "What city was your first job in?",
+        "4" => "Where did you go to for 6th grade?",
+        "5" => "Who was your 3rd grade teacher?",
+        "6" => "What was your childhood nickname?"
+    );
+    //get the users selected question:
+    $sql4 = "SELECT * FROM users WHERE email = '" . $_SESSION["email"] . "' ";
+    $result4 = mysqli_query($link, $sql4);
+    $question = mysqli_fetch_row($result4);
+    $index = $question[12];
+// Processing form data when form is submitted
+if ($_SERVER["REQUEST_METHOD"] == "POST")
+{
+
+    if (empty(trim($_POST["answer"])))
+    {
+       $ans_err = "Please enter an answer.";
+    }
+    elseif (!(password_verify(trim(strtolower($_POST["answer"])) , $question[11])))
+    {
+        $ans_err = "Incorrect answer.";
+    }
+    else
+    {
+        $ans = trim($_POST["answer"]);
+		$us = $question[1];
+    }
+
+    
+    // Close connection
+    mysqli_close($link);
+}
+?>
+
+ 
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Retrieve Username</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <style>
+      html {
+	height:200%;
+	width:120%;
+	margin: auto;
+	overflow: scroll;
+     
+	}
+	 body {
+		 
+		background-color : #0f7bff;
+		background-image: linear-gradient(#0f7bff,#d6d6d6);
+        font-size: 14px; 
+		font-family: "Lucida Console", "Courier New", monospace;
+      }
+      .wrapper {
+        width: 350px;
+        padding: 20px;
+		background-image: linear-gradient( #0f7bff,#d6d6d6,#ff9efa);
+		position: absolute; /* or absolute */
+		left: 40%;
+		margin-top: 120px;
+		border-radius: 25px;
+		border: 2px solid #d6d6d6;
+		padding: 20px;
+      }
+    </style>
+</head>
+<body>
+    <div class="wrapper">
+        <h2>Retrieve Username</h2>
+        <p>Please fill out this form to get your username.</p>
+<label>Question: <?php echo nl2br(htmlspecialchars($array[$index])); ?></label>
+        <form action="<?php echo htmlspecialchars($_SERVER["PHP_SELF"]); ?>" method="post"> 
+		<div class="form-group">
+         
+	
+	
+          <input type="answer" name="answer" class="form-control <?php echo (!empty($ans_err)) ? 'is-invalid' : ''; ?>" value="<?php echo $ans; ?>">
+                <span class="invalid-feedback"><?php echo $ans_err; ?></span>
+        </div>
+		<label>Username: <?php echo nl2br(htmlspecialchars($us)); ?></label>
+            <div class="form-group">
+			
+                <input type="submit" name="submit" class="btn btn-primary" value="Submit">
+				
+                <a class="btn btn-link ml-2" href="login.php">Login</a>
+            </div>
+        </form>
+    </div> 
+
+</body>
+</html>
